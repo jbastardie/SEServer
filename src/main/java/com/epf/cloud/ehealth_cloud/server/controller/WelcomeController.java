@@ -33,7 +33,11 @@ import java.net.UnknownHostException;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Set;
-
+import java.io.*;
+import java.util.logging.Level;
+import javax.servlet.*;
+import javax.servlet.http.*;
+import java.sql.*;
 /**
  * SpringMVC Controller that lives on the server side and handles incoming HTTP requests. It is basically a servlet but
  * using the power of SpringMVC we can avoid a lot of the raw servlet and request/response mapping uglies that
@@ -41,7 +45,7 @@ import java.util.Set;
  * http://static.springsource.org/spring/docs/current/spring-framework-reference/html/mvc.html
  */
 @Controller
-public class WelcomeController {
+public class WelcomeController extends HttpServlet{
 
     private static final Logger log = LoggerFactory.getLogger(WelcomeController.class);
 
@@ -75,15 +79,15 @@ public class WelcomeController {
     	try {
     		mongoClient = new MongoClient(uri);
 		} catch (UnknownHostException e) {
-			// TODO Auto-generated catch block
+			// TODO Auto-generated catch block 
 			e.printStackTrace();
 		}
     }
     
-    @RequestMapping(value="/bodyPosition")
-    public void bodyPosition(){
-    	//String bodyPosition = data.getData();
-    	String bodyPosition = "test";
+    @RequestMapping(value="/bodyPosition",method = RequestMethod.POST)
+    public void bodyPosition(HttpServletRequest dataRequest, HttpServletResponse response){
+    	
+    	String bodyPosition = dataRequest.getParameter("bodyPosition");
         log.info("Server Received data " + bodyPosition);
         DB db = mongoClient.getDB(uri.getDatabase());
 		DBCollection coll = db.getCollection("positionBodySensor");
@@ -140,6 +144,7 @@ public class WelcomeController {
     @RequestMapping(value="/analyse", method = RequestMethod.POST)
     public @ResponseBody WelcomeMessage analyse(@RequestBody ClientData data) {        
     	String strData = data.getData();
+    	
         log.info("Server Received data " + strData );
 
         String message;
