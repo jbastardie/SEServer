@@ -90,6 +90,7 @@ public class WelcomeController extends HttpServlet{
     String textUri = "mongodb://sysembed:sysembed@ds113958.mlab.com:13958/embedsys";
     MongoClient mongoClient;
     MongoClientURI uri;
+    private boolean realTime = true;
     
     @PostConstruct
     public void init(){
@@ -155,13 +156,35 @@ public class WelcomeController extends HttpServlet{
     	sendDataToCollection("temperature",lastDataTemperature);
     	int lastDataAirflow =  getLastData("/home/pi/DEV/eHealth_raspberrypi_v2.3/Data/airflowData.txt"); 
     	sendDataToCollection("airflow",lastDataAirflow);
-    	String json = "{ \"id\":1,\"data\":[{\"bodyPositionSensor\": [{\"id\":1},{\"data\":"+lastDataPosition+"}]},{\"temperatureSensor\": [{\"id\":2},{\"data\":"+lastDataTemperature+"}],\"airflowSensor\": [{\"id\":3},{\"data\":"+lastDataAirflow+"}]}]}";
+    	String json = "{ \"id\":1,\"data\":{\"bodyPositionSensor\": {\"id\":1,\"data\":"+lastDataPosition+"},\"temperatureSensor\": {\"id\":2,\"data\":"+lastDataTemperature+"},\"airflowSensor\": {\"id\":3,\"data\":"+lastDataAirflow+"}}}";
+    	
     	log.info(json);
     	sendDataToSocket(json);
     	
     }
     
     @RequestMapping("realTime")
+    public void realTimeData(){
+    	while(realTime){
+    		getDataSensor();
+    		try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+    	}
+    }
+    
+    @RequestMapping("stopRealTime")
+    public void stopRealTimeData(){
+    	realTime = false;
+    }
+    
+    @RequestMapping("startRealTime")
+    public void startRealTimeData(){
+    	realTime = true;
+    }
     
     
     public int getLastData(String filePath){
