@@ -1,5 +1,10 @@
 package com.epf.cloud.ehealth_cloud.server.controller;
 import java.net.UnknownHostException;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+
+import javax.net.ssl.HttpsURLConnection;
 
 import javax.annotation.PostConstruct;
 import com.epf.cloud.ehealth_cloud.common.ClientData;
@@ -40,6 +45,16 @@ import java.util.logging.Level;
 import javax.servlet.*;
 import javax.servlet.http.*;
 import java.sql.*;
+
+import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicNameValuePair;
 /**
  * SpringMVC Controller that lives on the server side and handles incoming HTTP requests. It is basically a servlet but
  * using the power of SpringMVC we can avoid a lot of the raw servlet and request/response mapping uglies that
@@ -178,7 +193,73 @@ public class WelcomeController extends HttpServlet{
 		        .append("position", data);				
 		        //.append("count", 1)
 		        //.append("info", new BasicDBObject("x", 203).append("y", 102));
+		sendDataToSocket(doc);
 		coll.insert(doc);
+	}
+    
+    public void sendDataToSocket(BasicDBObject doc){
+    	
+    	String url = "http://192.168.43.224:8080/JbossPost";
+    	HttpClient client = new DefaultHttpClient();
+		HttpPost post = new HttpPost(url);
+
+		// add header
+		//post.setHeader("User-Agent", USER_AGENT);
+
+		List<NameValuePair> urlParameters = new ArrayList<NameValuePair>();
+		urlParameters.add(new BasicNameValuePair("sn", "C02G8416DRJM"));
+		urlParameters.add(new BasicNameValuePair("cn", ""));
+		urlParameters.add(new BasicNameValuePair("locale", ""));
+		urlParameters.add(new BasicNameValuePair("caller", ""));
+		urlParameters.add(new BasicNameValuePair("num", "12345"));
+
+		try {
+			post.setEntity(new UrlEncodedFormEntity(urlParameters));
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		HttpResponse response = null;
+		try {
+			response = client.execute(post);
+		} catch (ClientProtocolException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		log.info("\nSending 'POST' request to URL : " + url);
+		log.info("Post parameters : " + post.getEntity());
+		log.info("Response Code : " + response.getStatusLine().getStatusCode());
+
+		BufferedReader rd = null;
+		try {
+			rd = new BufferedReader(
+			                new InputStreamReader(response.getEntity().getContent()));
+		} catch (UnsupportedOperationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		StringBuffer result = new StringBuffer();
+		String line = "";
+		try {
+			while ((line = rd.readLine()) != null) {
+				result.append(line);
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		log.info(result.toString());
+
+		
     }
     
 }
