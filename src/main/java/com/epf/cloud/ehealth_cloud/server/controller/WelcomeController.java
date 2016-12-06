@@ -53,6 +53,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 /**
@@ -147,10 +148,16 @@ public class WelcomeController extends HttpServlet{
     
     @RequestMapping("getDataSensor")
     public void getDataSensor(){
+    	
     	int lastDataPosition =  getLastData("/root/DEV/dataCapteur/positionData.txt"); 
     	sendDataToCollection("positionBodySensor",lastDataPosition);
     	int lastDataTemperature =  getLastData("/root/DEV/dataCapteur/temperatureData.txt"); 
     	sendDataToCollection("temperature",lastDataTemperature);
+    	int lastDataAirflow =  getLastData("/root/DEV/dataCapteur/airflowData.txt"); 
+    	sendDataToCollection("airflow",lastDataAirflow);
+    	String json = "{ \"id\":1,\"data\":[{\"bodyPositionSensor\": [{\"id\":1},{\"data\":"+lastDataPosition+"}]},{\"temperatureSensor\": [{\"id\":2},{\"data\":"+lastDataTemperature+"}],\"airflowSensor\": [{\"id\":3},{\"data\":"+lastDataAirflow+"}]}]}";
+    	log.info(json);
+    	sendDataToSocket(json);
     	
     }
     
@@ -190,14 +197,15 @@ public class WelcomeController extends HttpServlet{
     	DB db = mongoClient.getDB(uri.getDatabase());
 		DBCollection coll = db.getCollection(collectionName);
 		BasicDBObject doc = new BasicDBObject("id", "1")
+				.append("idSensorPosition", "1")
 		        .append("position", data);				
 		        //.append("count", 1)
 		        //.append("info", new BasicDBObject("x", 203).append("y", 102));
-		sendDataToSocket(doc);
+		
 		coll.insert(doc);
 	}
     
-    public void sendDataToSocket(BasicDBObject doc){
+    public void sendDataToSocket(String json){
     	
     	String url = "http://192.168.43.224:8080/JbossPost";
     	HttpClient client = new DefaultHttpClient();
@@ -206,19 +214,17 @@ public class WelcomeController extends HttpServlet{
 		// add header
 		//post.setHeader("User-Agent", USER_AGENT);
 
-		List<NameValuePair> urlParameters = new ArrayList<NameValuePair>();
-		urlParameters.add(new BasicNameValuePair("sn", "C02G8416DRJM"));
-		urlParameters.add(new BasicNameValuePair("cn", ""));
-		urlParameters.add(new BasicNameValuePair("locale", ""));
-		urlParameters.add(new BasicNameValuePair("caller", ""));
-		urlParameters.add(new BasicNameValuePair("num", "12345"));
-
+		
+		StringEntity input = null;
 		try {
-			post.setEntity(new UrlEncodedFormEntity(urlParameters));
-		} catch (UnsupportedEncodingException e) {
+			input = new StringEntity(json);
+		} catch (UnsupportedEncodingException e1) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			e1.printStackTrace();
 		}
+		input.setContentType("application/json");
+		post.setEntity(input);
+		
 
 		HttpResponse response = null;
 		try {
