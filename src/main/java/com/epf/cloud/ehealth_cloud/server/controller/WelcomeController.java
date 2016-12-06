@@ -30,8 +30,10 @@ import com.mongodb.ParallelScanOptions;
 import com.mongodb.ServerAddress;
 
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.Set;
 import java.io.*;
 import java.util.logging.Level;
@@ -93,24 +95,11 @@ public class WelcomeController extends HttpServlet{
 		DBCollection coll = db.getCollection("positionBodySensor");
 		BasicDBObject doc = new BasicDBObject("id", "1")
 		        .append("position", bodyPosition);
-		        //.append("count", 1)
+		        
 		        //.append("info", new BasicDBObject("x", 203).append("y", 102));
 		coll.insert(doc);
     }
-    
-    @RequestMapping("/welcome")
-    public @ResponseBody WelcomeMessage sayHello(@RequestParam(required = false) String name) {
-
-        log.info("Saying hello to '{}'", name);
-
-        String message;
-        if (name != null && name.trim().length() > 0) {
-            message = "Hello " + name;
-        } else {
-            message = "Hello mysterious person";
-        }
-        return new WelcomeMessage(message, new Date());
-    }
+     
     
     @RequestMapping("connectMongo")
     public void initiateConnection(){
@@ -141,19 +130,55 @@ public class WelcomeController extends HttpServlet{
 		}
     }
     
-    @RequestMapping(value="/analyse", method = RequestMethod.POST)
-    public @ResponseBody WelcomeMessage analyse(@RequestBody ClientData data) {        
-    	String strData = data.getData();
+    @RequestMapping("getDataSensor")
+    public void getDataSensor(){
+    	int lastDataPosition =  getLastData("/root/DEV/dataCapteur/positionData.txt"); 
+    	sendDataToCollection("positionBodySensor",lastDataPosition);
+    	int lastDataTemperature =  getLastData("/root/DEV/dataCapteur/temperatureData.txt"); 
+    	sendDataToCollection("temperature",lastDataTemperature);
     	
-        log.info("Server Received data " + strData );
+    }
+    
+    public int getLastData(String filePath){
+    	List<Integer> list = new ArrayList<Integer>();
+        File file = new File(filePath);
+        BufferedReader reader = null;
+        try {
+            reader = new BufferedReader(new FileReader(file));
+            String text = null;
 
-        String message;
-        if (strData != null && strData.trim().length() > 0) {            
-            message = "Server has already received your data " + strData ;
-        } else {
-            message = "FHE-Cloud server received a mysterious data from client";
+            while ((text = reader.readLine()) != null) {
+                list.add(Integer.parseInt(text));
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (reader != null) {
+                    reader.close();
+                }
+            } catch (IOException e) {
+            }
         }
-        return new WelcomeMessage(message, Calendar.getInstance().getTime());
+        int data = 0;
+        if(list.get(list.size()-1) != null){
+        	data = list.get(list.size()-1);
+        }
+    	return data;
+    }
+    
+    
+    public void sendDataToCollection(String collectionName,int data){
+    	//log.info("Server Received data " + data);
+    	DB db = mongoClient.getDB(uri.getDatabase());
+		DBCollection coll = db.getCollection(collectionName);
+		BasicDBObject doc = new BasicDBObject("id", "1")
+		        .append("position", data);				
+		        //.append("count", 1)
+		        //.append("info", new BasicDBObject("x", 203).append("y", 102));
+		coll.insert(doc);
     }
     
 }
