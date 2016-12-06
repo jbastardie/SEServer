@@ -149,17 +149,20 @@ public class WelcomeController extends HttpServlet{
     @RequestMapping("getDataSensor")
     public void getDataSensor(){
     	
-    	int lastDataPosition =  getLastData("/root/DEV/dataCapteur/positionData.txt"); 
+    	int lastDataPosition =  getLastData("/home/pi/DEV/eHealth_raspberrypi_v2.3/Data/positionData.txt"); 
     	sendDataToCollection("positionBodySensor",lastDataPosition);
-    	int lastDataTemperature =  getLastData("/root/DEV/dataCapteur/temperatureData.txt"); 
+    	int lastDataTemperature =  getLastData("/home/pi/DEV/eHealth_raspberrypi_v2.3/Data/temperatureData.txt"); 
     	sendDataToCollection("temperature",lastDataTemperature);
-    	int lastDataAirflow =  getLastData("/root/DEV/dataCapteur/airflowData.txt"); 
+    	int lastDataAirflow =  getLastData("/home/pi/DEV/eHealth_raspberrypi_v2.3/Data/airflowData.txt"); 
     	sendDataToCollection("airflow",lastDataAirflow);
     	String json = "{ \"id\":1,\"data\":[{\"bodyPositionSensor\": [{\"id\":1},{\"data\":"+lastDataPosition+"}]},{\"temperatureSensor\": [{\"id\":2},{\"data\":"+lastDataTemperature+"}],\"airflowSensor\": [{\"id\":3},{\"data\":"+lastDataAirflow+"}]}]}";
     	log.info(json);
     	sendDataToSocket(json);
     	
     }
+    
+    @RequestMapping("realTime")
+    
     
     public int getLastData(String filePath){
     	List<Integer> list = new ArrayList<Integer>();
